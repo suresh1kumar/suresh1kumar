@@ -1,0 +1,54 @@
+springProfile: development
+---
+server:
+  port: 9081
+  servlet:
+    contextPath: ${CONTEXT_PATH:/}
+---
+logging:
+  level:
+    root: INFO
+    com.neom: DEBUG
+
+flogger:
+  backend_factory: "com.google.common.flogger.backend.slf4j.Slf4jBackendFactory#getInstance"
+---
+springfox:
+  documentation:
+    enabled: true
+---
+management:
+  endpoints:
+    enabled-by-default: true
+    web.exposure.include: info, health
+  endpoint:
+    health:
+      show-details: always
+
+info:
+  app:
+    name: NEOM PAY OTP API
+---
+jwt:
+  serverUrl: ${CRYPTO_SERVER_URL:http://localhost:9080}
+  tokenValidity: 3600
+  journeyType: jrnType
+---
+spring:
+  jpa:
+    database: POSTGRESQL
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: neom
+  datasource:
+    platform: postgres
+    url: jdbc:postgresql://10.30.12.23:5432/neom_pay?sslmode=disable
+    username: root
+    password: ne0m@ne#u5@2021
+    driverClassName: org.postgresql.Driver
+---
+sbx:
+  proxy-address: https://api.neompay-sbx-fss.neomos.online/otpapi/

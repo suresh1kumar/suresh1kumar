@@ -1,0 +1,151 @@
+plugins {
+    id 'org.springframework.boot' version "${springBootVersion}"
+    id 'io.spring.dependency-management' version "${springDependencyManagement}"
+    id "com.google.protobuf" version "0.8.17"
+    id 'java'
+    id 'maven-publish'
+    id 'idea'
+    id 'eclipse'
+    id 'jacoco'
+}
+
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
+
+configurations {
+    componentImplementation.extendsFrom testImplementation
+    componentRuntime.extendsFrom testRuntime
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+sourceSets {
+    component {
+        resources.srcDir "$projectDir/src/component/resources"
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+task componentTest(type: Test) {
+    testClassesDirs = sourceSets.component.output.classesDirs
+    classpath = sourceSets.component.runtimeClasspath
+    mustRunAfter test
+}
+
+configurations.all {
+    exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+}
+
+jar {
+    archivesBaseName = project.name
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+dependencies {
+    implementation project(':library')
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.postgresql:postgresql:42.3.1'
+    implementation 'org.liquibase:liquibase-core:4.6.1'
+    implementation 'com.google.flogger:flogger-slf4j-backend:0.5.1'
+    implementation 'io.springfox:springfox-boot-starter:3.0.0'
+    implementation 'com.huaweicloud:spring-cloud-huawei:1.3.4'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'net.minidev:json-smart:2.4.1'
+    implementation 'org.springframework.security:spring-security-core:5.4.7'
+    /* implementation 'com.neom.fss.neompay.crosscuttinglib:neom-fss-neompay-cross-cutting-lib:0.0.2'*/
+    implementation 'com.google.protobuf:protobuf-java:3.4.0'
+    implementation 'javax.validation:validation-api:2.0.1.Final'
+    compileOnly 'org.projectlombok:lombok'
+
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testCompileOnly 'org.projectlombok:lombok:1.18.22'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+
+repositories {
+    mavenCentral()
+    maven {
+        url "http://119.8.166.105:8081/repository/lib/"
+        allowInsecureProtocol = true
+        credentials {
+            username = 'dev'
+            password = 'Ne0mDev@2021'
+        }
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = project.group
+            artifactId = project.name
+            version = project.version
+            artifact bootJar
+            from components.java
+        }
+    }
+
+    repositories {
+        maven {
+            name 'nexus'
+            url "http://119.8.166.105:8081/repository/lib/"
+            allowInsecureProtocol = true
+            credentials {
+                username nexusUsername
+                password nexusPassword
+            }
+        }
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.7"
+}
+sonarqube {
+    properties {
+        property "sonar.exclusions", "**/model/**,**/config/**,**/entity/**,**/constants/**,**/annotation/**,**/Application.java,**/*Dto.java"
+    }
+}
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    '**/model/**',
+                    '**/config/**',
+                    '**/entity/**',
+                    '**/constants/**',
+                    '**/annotation/**',
+                    '**/Application.java',
+                    '**/*Dto*'
+            ])
+        }))
+    }
+
+    reports {
+        xml.required = true
+        csv.required = true
+        html.outputLocation = layout.buildDirectory.dir('jacocoRepots')
+    }
+
+}

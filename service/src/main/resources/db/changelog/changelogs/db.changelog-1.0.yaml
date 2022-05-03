@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      - id: 0
+        author: Radoslaw Rycyk
+      - preConditions:
+          - onFail: MARK_RAN
+          - not:
+              - tableExists:
+                  schemaName: public
+                  tableName: token
+      - changes:
+          - createTable:
+              tableName: token
+              columns:
+                - column:
+                    name: id
+                    type: int
+                    autoIncrement: true
+                    constraints:
+                      primaryKey: true
+                      nullable: false
+                - column:
+                    name: hashed_value
+                    type: int
